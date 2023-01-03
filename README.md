@@ -109,21 +109,97 @@ Désolé, essayez de nouveau.
 
 ## Exécuter un serveur web (apache, nginx, …) dans un conteneur docker
 ### Récupérer l’image sur le Docker Hub
+```
+$ docker run --name some-nginx -v /some/content:/usr/share/nginx/html:ro -d nginx
+```
+voici sur mon dossier :
+```
+sudo docker run --name some-nginx -v /Bureau/tp-1-dev-ops/TP-DevOps-1:/usr/share/nginx/html:ro -d nginx
+
+97c0ade87015585ba0ba9be71bb455f5cfc9d06b1881fece9bd5496a6fd45660
+```
 ### Vérifier que cette image est présente en local
+
+```
+sudo docker run --name some-nginx -v /Bureau/tp-1-dev-ops/TP-DevOps-1:/usr/share/nginx/html:ro -d nginx
+```
+
 ### Créer un fichier index.html simple
+
+```
+<p>Bitbucket has the following space stations:</p>
+<p>
+   <b>Earth's Moon</b><br>
+   Headquarters
+</p>
+<p>
+   <b>Mars</b><br>
+   Recreation Department
+</p>
+
+```
+
 ### Démarrer un conteneur et servir la page html créée précédemment à l’aide d’un volume (option -v de docker run)
+
+```
+sudo docker run --name some-nginx -v /home/demontis/Bureau/tp-1-dev-ops/TP-DevOps-1:/usr/share/nginx/html:ro -d nginx -v
+
+7b4548491529dcac52ca430d269b0d89d20e5b60595f7b8c1cb25ff8cffcc22d
+```
+
 ### Supprimer le conteneur précédent et arriver au même résultat que précédemment à l’aide de la commande docker cp
+
+```
+demontis@demontis-VirtualBox:~$ sudo docker stop 7b4
+
+7b4
+
+demontis@demontis-VirtualBox:~$ sudo docker rm 7b4
+
+7b4
+
+demontis@demontis-VirtualBox:~$ sudo docker ps -a
+
+CONTAINER ID   IMAGE     COMMAND                  CREATED       STATUS                   PORTS     NAMES
+
+e468eb9fe9fb   nginx     "/docker-entrypoint.…"   2 hours ago   Exited (0) 2 hours ago             gallant_joliot
+
+f5ac1bebfa0d   nginx     "/docker-entrypoint.…"   2 hours ago   Created                            quizzical_rubin
+
+08f8f817349a   nginx     "/docker-entrypoint.…"   2 hours ago   Created                            intelligent_feistel
+
+ce3a282ab92f   nginx     "/docker-entrypoint.…"   2 weeks ago   Exited (0) 2 weeks ago             compassionate_feistel
+
+5aa89f7542be   nginx     "/docker-entrypoint.…"   2 weeks ago   Created                            magical_raman
+```
+
 ## Builder une image
+
 ### A l’aide d’un Dockerfile, créer une image (commande docker build)
+
 ### Exécuter cette nouvelle image de manière à servir la page html (commande docker run)
+
 ### Quelles différences observez-vous entre les procédures 5. et 6. ? Avantages et inconvénients de l’une et de l’autre méthode ? (Mettre en relation ce qui est observé avec ce qui a été présenté pendant le cours)
+
+
 ## Utiliser une base de données dans un conteneur docker
+
 ### Récupérer les images mysql:5.7 et phpmyadmin/phpmyadmin depuis le Docker Hub
+
 ### Exécuter deux conteneurs à partir des images et ajouter une table ainsi que quelques enregistrements dans la base de données à l’aide de phpmyadmin
+
+
 ## Faire la même chose que précédemment en utilisant un fichier docker-compose.yml
+
 ### Qu’apporte le fichier docker-compose par rapport aux commandes docker run ? Pourquoi est-il intéressant ? (cf. ce qui a été présenté pendant le cours)
+
 ### Quel moyen permet de configurer (premier utilisateur, première base de données, mot de passe root, …) facilement le conteneur mysql au lancement ?
+
+
 ## Observation de l’isolation réseau entre 3 conteneurs
+
 ### A l’aide de docker-compose et de l’image praqma/network-multitool disponible sur le Docker Hub créer 3 services (web, app et db) et 2 réseaux (frontend et backend). Les services web et db ne devront pas pouvoir effectuer de ping de l’un vers l’autre
+
 ### Quelles lignes du résultat de la commande docker inspect justifient ce comportement ?
+
 ### Dans quelle situation réelles (avec quelles images) pourrait-on avoir cette configuration réseau ? Dans quel but ?
