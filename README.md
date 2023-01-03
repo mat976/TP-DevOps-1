@@ -172,10 +172,23 @@ ce3a282ab92f   nginx     "/docker-entrypoint.…"   2 weeks ago   Exited (0) 2 w
 
 5aa89f7542be   nginx     "/docker-entrypoint.…"   2 weeks ago   Created                            magical_raman
 ```
+commande cp :
+```
+demontis@demontis-VirtualBox:~$ sudo docker run --name some-nginx -d -p 8080:80 nginx
+
+88f4529c59ed7a3f9e28d58bdb0361872bc9bd610cd30cbb191b904669e811f8
+
+demontis@demontis-VirtualBox:~$ sudo docker cp /home/demontis/Bureau/tp-1-dev-ops/TP-DevOps-1/index.html 88f4:/usr/share/nginx/html/index.html
+
+```
 
 ## Builder une image
 
 ### A l’aide d’un Dockerfile, créer une image (commande docker build)
+
+```
+
+```
 
 ### Exécuter cette nouvelle image de manière à servir la page html (commande docker run)
 
