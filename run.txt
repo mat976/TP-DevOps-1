@@ -1,0 +1,9 @@
+web:
+  image: nginx
+  volumes:
+   - /home/demontis/Bureau/tp-1-dev-ops/TP-DevOps-1:/etc/nginx/html
+  ports:
+   - "8080:80"
+  environment:
+   - NGINX_HOST=foobar.com
+   - NGINX_PORT=80
