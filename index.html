@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Projet DevOps — Matisse & Toma</title>
+  <title>Gestion de Stock — Fleur verte</title>
   <style>
     /* Style simple, adapté débutant */
     :root {
@@ -112,48 +112,172 @@
     a:hover {
       text-decoration: underline;
     }
+
+    /* Styles supplémentaires pour la gestion de stock */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: left;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.04);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .status.ok {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+
+    .status.low {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .status.out {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      background: #0b1220;
+      color: var(--text);
+      cursor: default;
+    }
+
+    .btn:disabled {
+      opacity: 0.7;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <header>
-      <h1>Projet DevOps — Matisse & Toma</h1>
-      <p>Mini page d’accueil, simple et claire (HTML + CSS).</p>
+      <h1>Gestion de Stock — Magasin Simple</h1>
+      <p>Exemple très simple en HTML/CSS pour visualiser un inventaire.</p>
     </header>
 
-    <div class="grid">
-      <div class="card">
-        <span class="badge">Équipe</span>
-        <h3>Matisse</h3>
-        <p>DevOps • Automation • CI/CD</p>
-      </div>
-      <div class="card">
-        <span class="badge">Équipe</span>
-        <h3>Toma</h3>
-        <p>DevOps • Conteneurs • Observabilité</p>
-      </div>
-    </div>
-
     <section class="section">
-      <h2>Objectifs du projet</h2>
-      <ul class="list">
-        <li>Configurer CI/CD basique (build, test, déploiement).</li>
-        <li>Utiliser des conteneurs (Docker) pour l’isolement.</li>
-        <li>Mettre en place un monitoring simple (logs/metrics).</li>
-        <li>Documenter les étapes dans le README.</li>
-      </ul>
+      <h2>Inventaire des produits</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>SKU</th>
+              <th>Stock</th>
+              <th>Seuil</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pâtes Spaghetti 500g</td>
+              <td>ALIM-PA-001</td>
+              <td>36</td>
+              <td>20</td>
+              <td><span class="status ok">OK</span></td>
+              <td class="actions">
+                <button class="btn" disabled>Entrée stock</button>
+                <button class="btn" disabled>Sortie stock</button>
+              </td>
+            </tr>
+            <tr>
+              <td>Sauce Tomate 250g</td>
+              <td>ALIM-SC-014</td>
+              <td>12</td>
+              <td>15</td>
+              <td><span class="status low">Bas</span></td>
+              <td class="actions">
+                <button class="btn" disabled>Commander</button>
+                <button class="btn" disabled>Sortie stock</button>
+              </td>
+            </tr>
+            <tr>
+              <td>Huile d’Olive 1L</td>
+              <td>ALIM-HU-077</td>
+              <td>0</td>
+              <td>10</td>
+              <td><span class="status out">Rupture</span></td>
+              <td class="actions">
+                <button class="btn" disabled>Commander</button>
+                <button class="btn" disabled>Entrée stock</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="section">
-      <h2>Ressources</h2>
-      <p>
-        Voir le fichier <a href="README.md" target="_blank" rel="noopener">README</a> du repo.
-      </p>
+      <h2>Ajout d’un produit (exemple)</h2>
+      <div class="card">
+        <p>Formulaire non-fonctionnel, juste pour l’exemple visuel.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label>
+            Nom du produit
+            <input type="text" placeholder="ex: Riz Basmati 1kg"
+              style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
+          </label>
+          <label>
+            SKU
+            <input type="text" placeholder="ex: ALIM-RI-055"
+              style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
+          </label>
+          <label>
+            Stock initial
+            <input type="number" placeholder="ex: 25"
+              style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
+          </label>
+          <label>
+            Seuil d’alerte
+            <input type="number" placeholder="ex: 10"
+              style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
+          </label>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn" disabled>Ajouter</button>
+        </div>
+      </div>
     </section>
 
     <footer>
-      Fait simple pour débuter • HTML & CSS uniquement
+      Exemple débutant • HTML & CSS uniquement • Sans JavaScript
     </footer>
   </div>
 </body>
