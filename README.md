@@ -1,4 +1,34 @@
-# tp dev ops Demontis matisse 
+# TP DevOps — Demontis Matisse
+
+## Stack Dockerisée
+- Backend: FastAPI (Python)
+- Frontend: Node.js (Express)
+- Base de données: PostgreSQL
+
+## Démarrage rapide
+- Prérequis: Docker et Docker Compose
+
+1. Construire et lancer les services:
+   - `docker compose up -d --build`
+2. Ouvrir le frontend:
+   - `http://localhost:3000/`
+3. Tester le backend:
+   - `http://localhost:8000/health`
+   - `http://localhost:8000/items`
+   - `http://localhost:8000/db-check`
+
+## Structure
+- `backend/`: application FastAPI et Dockerfile
+- `frontend/`: serveur Express et Dockerfile
+- `docker-compose.yml`: orchestration des services
+
+## Variables et DB
+- Postgres tourne avec `app:app` et base `appdb`.
+- Le backend utilise `DATABASE_URL=postgresql://app:app@db:5432/appdb`.
+
+## Arrêt / Nettoyage
+- Arrêter: `docker compose down`
+- Supprimer volumes DB: `docker compose down -v`
 ## commandes de bases :
 docker run hello-world : Hello-world d’exemple avec Docker
 ```
