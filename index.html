@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Projet DevOps — Matisse & Toma</title>
+  <style>
+    /* Style simple, adapté débutant */
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --accent: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(160deg, #0b1020, #1f2937);
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+    header { text-align: center; padding: 24px 0 8px; }
+    header h1 { margin: 0 0 8px; font-size: 32px; }
+    header p { margin: 0; color: #cbd5e1; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid #1f2937;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .card h3 { margin: 0 0 8px; font-size: 20px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #0ea5e9; color: #05243b; font-weight: 600; }
+
+    .section { margin-top: 32px; }
+    .section h2 { margin: 0 0 12px; font-size: 24px; }
+    .list { list-style: none; padding: 0; margin: 0; }
+    .list li { padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 8px; }
+
+    footer { margin-top: 32px; text-align: center; color: #a1a1aa; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Projet DevOps — Matisse & Toma</h1>
+      <p>Mini page d’accueil, simple et claire (HTML + CSS).</p>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <span class="badge">Équipe</span>
+        <h3>Matisse</h3>
+        <p>DevOps • Automation • CI/CD</p>
+      </div>
+      <div class="card">
+        <span class="badge">Équipe</span>
+        <h3>Toma</h3>
+        <p>DevOps • Conteneurs • Observabilité</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <h2>Objectifs du projet</h2>
+      <ul class="list">
+        <li>Configurer CI/CD basique (build, test, déploiement).</li>
+        <li>Utiliser des conteneurs (Docker) pour l’isolement.</li>
+        <li>Mettre en place un monitoring simple (logs/metrics).</li>
+        <li>Documenter les étapes dans le README.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Ressources</h2>
+      <p>
+        Voir le fichier <a href="README.md" target="_blank" rel="noopener">README</a> du repo.
+      </p>
+    </section>
+
+    <footer>
+      Fait simple pour débuter • HTML & CSS uniquement
+    </footer>
+  </div>
+</body>
+</html>
