@@ -3,7 +3,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BACKEND_URL = process.env.BACKEND_URL || 'http://backend:8000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 app.use(express.static(path.join(__dirname, 'public')));
 

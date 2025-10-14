@@ -182,6 +182,7 @@
       opacity: 0.7;
     }
   </style>
+  <script src="/config.js"></script>
 </head>
 
 <body>
@@ -205,41 +206,7 @@
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Pâtes Spaghetti 500g</td>
-              <td>ALIM-PA-001</td>
-              <td>36</td>
-              <td>20</td>
-              <td><span class="status ok">OK</span></td>
-              <td class="actions">
-                <button class="btn" disabled>Entrée stock</button>
-                <button class="btn" disabled>Sortie stock</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Sauce Tomate 250g</td>
-              <td>ALIM-SC-014</td>
-              <td>12</td>
-              <td>15</td>
-              <td><span class="status low">Bas</span></td>
-              <td class="actions">
-                <button class="btn" disabled>Commander</button>
-                <button class="btn" disabled>Sortie stock</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Huile d’Olive 1L</td>
-              <td>ALIM-HU-077</td>
-              <td>0</td>
-              <td>10</td>
-              <td><span class="status out">Rupture</span></td>
-              <td class="actions">
-                <button class="btn" disabled>Commander</button>
-                <button class="btn" disabled>Entrée stock</button>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="items-body"></tbody>
         </table>
       </div>
     </section>
@@ -280,6 +247,90 @@
       Exemple débutant • HTML & CSS uniquement • Sans JavaScript
     </footer>
   </div>
+
+  <script>
+    const backend = window.__BACKEND_URL__ || 'http://localhost:8000';
+
+    function statusBadge(stock, threshold) {
+      const span = document.createElement('span');
+      if (stock <= 0) { span.className = 'status out'; span.textContent = 'Rupture'; }
+      else if (stock < threshold) { span.className = 'status low'; span.textContent = 'Bas'; }
+      else { span.className = 'status ok'; span.textContent = 'OK'; }
+      return span;
+    }
+
+    async function fetchItems() {
+      const res = await fetch(`${backend}/items`);
+      return await res.json();
+    }
+
+    async function adjustStock(sku, delta, inputEl, statusEl) {
+      const res = await fetch(`${backend}/items/${sku}/adjust`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta })
+      });
+      const item = await res.json();
+      inputEl.value = item.stock;
+      const newBadge = statusBadge(item.stock, item.threshold);
+      statusEl.replaceWith(newBadge);
+    }
+
+    async function saveStock(sku, stock, inputEl, statusEl) {
+      const res = await fetch(`${backend}/items/${sku}/stock`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stock })
+      });
+      const item = await res.json();
+      inputEl.value = item.stock;
+      const newBadge = statusBadge(item.stock, item.threshold);
+      statusEl.replaceWith(newBadge);
+    }
+
+    function renderItems(items) {
+      const tbody = document.getElementById('items-body');
+      tbody.innerHTML = '';
+      items.forEach(item => {
+        const tr = document.createElement('tr');
+        const statusEl = statusBadge(item.stock, item.threshold);
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.sku}</td>
+          <td>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn" data-delta="-1">-1</button>
+              <button class="btn" data-delta="1">+1</button>
+              <input type="number" min="0" value="${item.stock}" style="width:90px;padding:6px;border-radius:8px;border:1px solid #1f2937;background:#0b1220;color:var(--text);" />
+              <button class="btn" data-action="save">Enregistrer</button>
+            </div>
+          </td>
+          <td>${item.threshold}</td>
+          <td></td>
+          <td class="actions"></td>
+        `;
+        tbody.appendChild(tr);
+        const controls = tr.querySelectorAll('button, input');
+        const decBtn = controls[0];
+        const incBtn = controls[1];
+        const inputEl = controls[2];
+        const saveBtn = controls[3];
+        const statusTd = tr.children[4];
+        statusTd.appendChild(statusEl);
+
+        decBtn.onclick = () => adjustStock(item.sku, -1, inputEl, statusEl);
+        incBtn.onclick = () => adjustStock(item.sku, +1, inputEl, statusEl);
+        saveBtn.onclick = () => {
+          const val = parseInt(inputEl.value || '0', 10);
+          if (isNaN(val) || val < 0) return;
+          saveStock(item.sku, val, inputEl, statusEl);
+        };
+      });
+    }
+
+    async function loadItems() {
+      const items = await fetchItems();
+      renderItems(items);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadItems);
+  </script>
 </body>
 
 </html>
