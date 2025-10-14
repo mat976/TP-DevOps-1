@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -24,9 +25,28 @@ jobs:
           pip install -r backend/requirements.txt -r backend/requirements-dev.txt
 
       - name: Run tests
-        run: pytest -q backend/tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://app:app@127.0.0.1:1/appdb
+        run: python -m pytest -q tests
+
+  frontend-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install --ignore-scripts
 
   build-images:
+    needs: [test-backend, frontend-install]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
