@@ -1,11 +1,13 @@
 
-name: CI
+name: Release
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
   test-backend:
@@ -60,3 +62,16 @@ jobs:
 
       - name: Build frontend image
         run: docker build -t tpdevops-frontend:ci ./frontend
+
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
