@@ -88,6 +88,13 @@ def db_check():
     except Exception as e:
         return {"database": "error", "detail": str(e)}
 
+@app.get("/articles", response_model=List[Item])
+def articles():
+    try:
+        return list_items()  # tente la DB
+    except Exception:
+        return []  # fallback 200 même si DB down
+
 
 @app.get("/items", response_model=List[Item])
 def list_items():
