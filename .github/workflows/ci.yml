@@ -1,10 +1,14 @@
+
 name: CI
+
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
   test-backend:
@@ -58,4 +62,3 @@ jobs:
         run: docker build -t tpdevops-backend:ci ./backend
 
       - name: Build frontend image
-        run: docker build -t tpdevops-frontend:ci ./frontend
