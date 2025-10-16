@@ -21,7 +21,7 @@ if (useLiveReload) {
   try {
     const connectLivereload = require('connect-livereload');
     app.use(connectLivereload());
-  } catch {}
+  } catch { }
 }
 app.use(express.static(path.join(__dirname, 'public'), { etag: false, maxAge: 0 }));
 
@@ -33,6 +33,18 @@ app.get('/config.js', (_req, res) => {
 app.get('/', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Route pour la page Casino
+app.get('/casino', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'public', 'casino.html'));
+});
+
+// Alias direct si on appelle /casino.html
+app.get('/casino.html', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'public', 'casino.html'));
 });
 
 app.listen(PORT, () => {

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Casino — Roulette Simple</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --accent: #60a5fa;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(160deg, #0b1020, #1f2937);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      background: #0b1220;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: #1e40af;
+      border-color: #1e3a8a;
+    }
+
+    .btn.success {
+      background: #064e3b;
+      border-color: #065f46;
+    }
+
+    .btn.danger {
+      background: #7f1d1d;
+      border-color: #991b1b;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #1f2937;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      background: #0b1220;
+      color: var(--text);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #error-banner {
+      margin: 12px 0;
+      padding: 8px;
+      border-radius: 8px;
+      background: #7f1d1d;
+      color: #fff;
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: left;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.06);
+    }
+  </style>
+  <script src="/config.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Casino — Roulette</h1>
+      <a href="/" class="btn">Retour</a>
+    </header>
+
+    <div id="error-banner"></div>
+
+    <section class="card" id="pseudo-section">
+      <h3>Votre pseudo (obligatoire)</h3>
+      <div class="grid">
+        <div class="field">
+          <label for="pseudo-input">Pseudo</label>
+          <input id="pseudo-input" type="text" placeholder="Entrez votre pseudo" />
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:12px;">
+        <button id="pseudo-submit" class="btn primary">Valider</button>
+      </div>
+      <small>Le pseudo est requis pour le classement et vos points.</small>
+    </section>
+
+    <section class="grid" id="casino-content" style="display:none;">
+      <div class="card">
+        <h3>Points du joueur</h3>
+        <div class="toolbar">
+          <div>Joueur: <strong id="player-name"></strong></div>
+          <div>Points: <strong id="player-points">0</strong></div>
+        </div>
+        <div class="toolbar" style="margin-top:12px;">
+          <button class="btn success" id="give-10">Give +10 points</button>
+          <button class="btn success" id="give-100">Give +100 points</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Roulette simple</h3>
+        <p>Chaque tour coûte 1 point. Choisissez une couleur, puis lancez.</p>
+        <div class="toolbar">
+          <label><input type="radio" name="bet" value="red" checked /> Rouge</label>
+          <label><input type="radio" name="bet" value="black" /> Noir</label>
+        </div>
+        <div class="toolbar" style="margin-top:12px;">
+          <button class="btn primary" id="spin-btn">Tourner 🎯</button>
+        </div>
+        <div id="spin-result" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>Classement (Top 10)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Joueur</th>
+              <th>Points</th>
+              <th>Victoires</th>
+              <th>Parties</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const backend = (window.__BACKEND_URL__ || window.location.origin).replace(/\/$/, '');
+
+    function showError(msg) {
+      const el = document.getElementById('error-banner');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
+
+    async function fetchJSON(url, options) {
+      try {
+        const res = await fetch(url, options);
+        const isJson = res.headers.get('content-type')?.includes('application/json');
+        const body = isJson ? await res.json().catch(() => ({})) : await res.text();
+        if (!res.ok) {
+          const message = isJson ? (body.detail || JSON.stringify(body)) : body;
+          throw new Error(message || `HTTP ${res.status}`);
+        }
+        return body;
+      } catch (e) {
+        showError(`Échec de requête: ${e.message}`);
+        throw e;
+      }
+    }
+
+    function getPseudo() {
+      return localStorage.getItem('casino_pseudo') || '';
+    }
+    function setPseudo(p) {
+      localStorage.setItem('casino_pseudo', p);
+    }
+
+    async function registerPseudo(pseudo) {
+      await fetchJSON(`${backend}/casino/register`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: pseudo })
+      });
+    }
+
+    async function loadPlayer() {
+      const pseudo = getPseudo();
+      document.getElementById('player-name').textContent = pseudo;
+      const lb = await fetchJSON(`${backend}/casino/leaderboard`);
+      const me = lb.find(x => x.username === pseudo);
+      document.getElementById('player-points').textContent = me ? me.points : 0;
+    }
+
+    async function givePoints(amount) {
+      const pseudo = getPseudo();
+      await fetchJSON(`${backend}/casino/give`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: pseudo, amount })
+      });
+      await loadPlayer();
+      await loadLeaderboard();
+    }
+
+    async function spinRoulette() {
+      const pseudo = getPseudo();
+      const bet = document.querySelector('input[name="bet"]:checked').value;
+      const res = await fetchJSON(`${backend}/casino/play`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: pseudo, bet })
+      });
+      document.getElementById('spin-result').textContent = `Résultat: ${res.result} • ${res.win ? 'Gagné +2 pts' : 'Perdu'} • Points: ${res.points}`;
+      await loadPlayer();
+      await loadLeaderboard();
+    }
+
+    async function loadLeaderboard() {
+      const lb = await fetchJSON(`${backend}/casino/leaderboard`);
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+      lb.slice(0, 10).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.username}</td><td>${r.points}</td><td>${r.wins}</td><td>${r.plays}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const pseudo = getPseudo();
+      const pseudoSection = document.getElementById('pseudo-section');
+      const casinoContent = document.getElementById('casino-content');
+      const submitBtn = document.getElementById('pseudo-submit');
+      const input = document.getElementById('pseudo-input');
+      const give10 = document.getElementById('give-10');
+      const give100 = document.getElementById('give-100');
+      const spinBtn = document.getElementById('spin-btn');
+
+      const ready = async (p) => {
+        await registerPseudo(p);
+        pseudoSection.style.display = 'none';
+        casinoContent.style.display = '';
+        await loadPlayer();
+        await loadLeaderboard();
+      };
+
+      if (pseudo) {
+        await ready(pseudo);
+      }
+
+      submitBtn.addEventListener('click', async () => {
+        const p = (input.value || '').trim();
+        if (!p) { showError('Le pseudo est obligatoire.'); return; }
+        setPseudo(p);
+        await ready(p);
+      });
+
+      give10.addEventListener('click', () => givePoints(10));
+      give100.addEventListener('click', () => givePoints(100));
+      spinBtn.addEventListener('click', () => spinRoulette());
+    });
+  </script>
+</body>
+
+</html>

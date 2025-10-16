@@ -10,7 +10,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "app", "-d", "appdb"]
+      test: [ "CMD", "pg_isready", "-U", "app", "-d", "appdb" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -32,17 +32,23 @@ services:
   frontend:
     build: ./frontend
     environment:
-      - BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://localhost:8000
       - PORT=3000
+      - LIVE_RELOAD=true
     depends_on:
       - backend
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend/public:/usr/src/app/public
+      - ./frontend/server.js:/usr/src/app/server.js
+    command: node server.js
     networks:
       - app_net
 
 volumes:
   db_data:
+
 
 networks:
   app_net:

@@ -169,6 +169,9 @@
   <div class="container">
     <header>
       <h1>Gestion de Stock</h1>
+      <div class="toolbar" style="justify-content:center; margin-top:8px;">
+        <a href="/casino" class="btn primary">Casino 🎰</a>
+      </div>
     </header>
 
     <section class="section">
@@ -230,7 +233,7 @@
   </div>
 
   <script>
-    const backend = window.__BACKEND_URL__ || 'http://localhost:8000';
+    const backend = (window.__BACKEND_URL__ || window.location.origin).replace(/\/$/, '');
     let itemsCache = [];
 
     // UI simplifiée: pas de badge de statut

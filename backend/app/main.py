@@ -1,4 +1,5 @@
 import os
+import random
 from typing import List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,6 +50,8 @@ def on_startup():
 
 # Store mémoire pour fonctionnement simple sans DB
 MEM_ITEMS: dict[str, dict] = {}
+# Casino store mémoire
+MEM_CASINO_PLAYERS: dict[str, dict] = {}
 
 
 class Item(BaseModel):
@@ -101,6 +104,91 @@ def config_js(request: Request):
     backend_url = os.getenv("BACKEND_URL", base)
     content = f"window.__BACKEND_URL__ = '{backend_url}';"
     return PlainTextResponse(content, media_type="application/javascript")
+
+
+# --- Casino endpoints ---
+class CasinoRegister(BaseModel):
+    username: str
+
+
+class CasinoGive(BaseModel):
+    username: str
+    amount: int
+
+
+class CasinoPlay(BaseModel):
+    username: str
+    bet: str  # 'red' ou 'black'
+
+
+@app.get("/casino")
+def casino_page():
+    path = os.path.join(STATIC_DIR, "casino.html")
+    if os.path.exists(path):
+        return FileResponse(path)
+    raise HTTPException(status_code=404, detail="Casino page not found")
+
+
+@app.get("/casino.html")
+def casino_page_html():
+    return casino_page()
+
+
+@app.post("/casino/register")
+def casino_register(payload: CasinoRegister):
+    username = (payload.username or "").strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    if username not in MEM_CASINO_PLAYERS:
+        MEM_CASINO_PLAYERS[username] = {"points": 0, "wins": 0, "plays": 0}
+    return {"username": username, **MEM_CASINO_PLAYERS[username]}
+
+
+@app.post("/casino/give")
+def casino_give(payload: CasinoGive):
+    username = (payload.username or "").strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    if payload.amount is None or payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be > 0")
+    if username not in MEM_CASINO_PLAYERS:
+        raise HTTPException(status_code=404, detail="User not registered")
+    MEM_CASINO_PLAYERS[username]["points"] += payload.amount
+    return {"username": username, **MEM_CASINO_PLAYERS[username]}
+
+
+@app.post("/casino/play")
+def casino_play(payload: CasinoPlay):
+    username = (payload.username or "").strip()
+    bet = (payload.bet or "").strip().lower()
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    if bet not in ("red", "black"):
+        raise HTTPException(status_code=400, detail="Bet must be 'red' or 'black'")
+    if username not in MEM_CASINO_PLAYERS:
+        raise HTTPException(status_code=404, detail="User not registered")
+    player = MEM_CASINO_PLAYERS[username]
+    if player["points"] < 1:
+        raise HTTPException(status_code=400, detail="Not enough points")
+    # coût de la partie
+    player["points"] -= 1
+    player["plays"] += 1
+    # résultat
+    result = random.choice(["red", "black"])  # simple 50/50
+    win = result == bet
+    if win:
+        player["points"] += 2
+        player["wins"] += 1
+    return {"username": username, "result": result, "win": win, **player}
+
+
+@app.get("/casino/leaderboard")
+def casino_leaderboard():
+    data = [
+        {"username": u, **info} for u, info in MEM_CASINO_PLAYERS.items()
+    ]
+    data.sort(key=lambda x: (x["points"], x["wins"]), reverse=True)
+    return data
 
 
 @app.get("/db-check")
