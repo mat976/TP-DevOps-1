@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gestion de Stock — Fleur verte</title>
+  <title>Gestion de Stock — CRUD Simple</title>
   <style>
     /* Style simple, adapté débutant */
     :root {
@@ -66,14 +66,7 @@
       font-size: 20px;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #0ea5e9;
-      color: #05243b;
-      font-weight: 600;
-    }
+    /* Nettoyage des styles de démo inutilisés */
 
     .section {
       margin-top: 32px;
@@ -139,30 +132,7 @@
       border-bottom: none;
     }
 
-    .status {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-weight: 600;
-    }
-
-    .status.ok {
-      background: rgba(34, 197, 94, 0.2);
-      color: #22c55e;
-      border: 1px solid rgba(34, 197, 94, 0.35);
-    }
-
-    .status.low {
-      background: rgba(245, 158, 11, 0.2);
-      color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.35);
-    }
-
-    .status.out {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.35);
-    }
+    /* (status badges retirés) */
 
     .actions {
       display: flex;
@@ -181,6 +151,16 @@
     .btn:disabled {
       opacity: 0.7;
     }
+    /* Styles supplémentaires pour la barre d'outils et les boutons */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .btn.primary { background: #1e40af; border-color: #1e3a8a; }
+    .btn.success { background: #064e3b; border-color: #065f46; }
+    .btn.danger { background: #7f1d1d; border-color: #991b1b; }
   </style>
   <script src="/config.js"></script>
 </head>
@@ -188,13 +168,15 @@
 <body>
   <div class="container">
     <header>
-      <h1>Gestion de Stock — Magasin Simple</h1>
-      <p>Exemple très simple en HTML/CSS pour visualiser un inventaire.</p>
+      <h1>Gestion de Stock</h1>
     </header>
 
     <section class="section">
-      <h2>Inventaire des produits</h2>
+      <h2>Inventaire</h2>
       <div class="card">
+        <div class="toolbar">
+          <button id="refresh-items" class="btn">Rafraîchir</button>
+        </div>
         <table>
           <thead>
             <tr>
@@ -202,7 +184,6 @@
               <th>SKU</th>
               <th>Stock</th>
               <th>Seuil</th>
-              <th>Statut</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -212,124 +193,152 @@
     </section>
 
     <section class="section">
-      <h2>Ajout d’un produit (exemple)</h2>
+      <h2>Ajouter un produit</h2>
       <div class="card">
-        <p>Formulaire non-fonctionnel, juste pour l’exemple visuel.</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <label>
             Nom du produit
-            <input type="text" placeholder="ex: Riz Basmati 1kg"
+            <input id="add-name" type="text" placeholder="Nom du produit"
               style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
           </label>
           <label>
             SKU
-            <input type="text" placeholder="ex: ALIM-RI-055"
+            <input id="add-sku" type="text" placeholder="SKU"
               style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
           </label>
           <label>
             Stock initial
-            <input type="number" placeholder="ex: 25"
+            <input id="add-stock" type="number" min="0" placeholder="Stock initial"
               style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
           </label>
           <label>
             Seuil d’alerte
-            <input type="number" placeholder="ex: 10"
+            <input id="add-threshold" type="number" min="0" placeholder="Seuil d’alerte"
               style="width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:var(--text);" />
           </label>
         </div>
-        <div style="margin-top:12px;">
-          <button class="btn" disabled>Ajouter</button>
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button id="add-submit" class="btn success">Ajouter</button>
+          <span id="add-feedback" style="color:#a1a1aa;"></span>
         </div>
       </div>
     </section>
 
     <footer>
-      Exemple débutant • HTML & CSS uniquement • Sans JavaScript
+      Inventaire CRUD • Frontend HTML + JavaScript
     </footer>
   </div>
 
   <script>
     const backend = window.__BACKEND_URL__ || 'http://localhost:8000';
+    let itemsCache = [];
 
-    function statusBadge(stock, threshold) {
-      const span = document.createElement('span');
-      if (stock <= 0) { span.className = 'status out'; span.textContent = 'Rupture'; }
-      else if (stock < threshold) { span.className = 'status low'; span.textContent = 'Bas'; }
-      else { span.className = 'status ok'; span.textContent = 'OK'; }
-      return span;
-    }
+    // UI simplifiée: pas de badge de statut
 
     async function fetchItems() {
       const res = await fetch(`${backend}/items`);
       return await res.json();
     }
 
-    async function adjustStock(sku, delta, inputEl, statusEl) {
-      const res = await fetch(`${backend}/items/${sku}/adjust`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta })
-      });
-      const item = await res.json();
-      inputEl.value = item.stock;
-      const newBadge = statusBadge(item.stock, item.threshold);
-      statusEl.replaceWith(newBadge);
-    }
-
-    async function saveStock(sku, stock, inputEl, statusEl) {
-      const res = await fetch(`${backend}/items/${sku}/stock`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stock })
-      });
-      const item = await res.json();
-      inputEl.value = item.stock;
-      const newBadge = statusBadge(item.stock, item.threshold);
-      statusEl.replaceWith(newBadge);
-    }
+    // UI simplifiée: suppression des ajustements +/- et de la mise à jour rapide
 
     function renderItems(items) {
       const tbody = document.getElementById('items-body');
       tbody.innerHTML = '';
       items.forEach(item => {
         const tr = document.createElement('tr');
-        const statusEl = statusBadge(item.stock, item.threshold);
         tr.innerHTML = `
-          <td>${item.name}</td>
+          <td><input type="text" value="${item.name}" /></td>
           <td>${item.sku}</td>
-          <td>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn" data-delta="-1">-1</button>
-              <button class="btn" data-delta="1">+1</button>
-              <input type="number" min="0" value="${item.stock}" style="width:90px;padding:6px;border-radius:8px;border:1px solid #1f2937;background:#0b1220;color:var(--text);" />
-              <button class="btn" data-action="save">Enregistrer</button>
-            </div>
+          <td><input type="number" min="0" value="${item.stock}" style="width:90px" /></td>
+          <td><input type="number" min="0" value="${item.threshold}" style="width:90px" /></td>
+          <td class="actions">
+            <button class="btn primary" data-action="update">Enregistrer</button>
+            <button class="btn danger" data-action="delete">Supprimer</button>
           </td>
-          <td>${item.threshold}</td>
-          <td></td>
-          <td class="actions"></td>
         `;
         tbody.appendChild(tr);
-        const controls = tr.querySelectorAll('button, input');
-        const decBtn = controls[0];
-        const incBtn = controls[1];
-        const inputEl = controls[2];
-        const saveBtn = controls[3];
-        const statusTd = tr.children[4];
-        statusTd.appendChild(statusEl);
+        const nameInput = tr.children[0].querySelector('input');
+        const stockInput = tr.children[2].querySelector('input');
+        const thresholdInput = tr.children[3].querySelector('input');
+        const updateBtn = tr.querySelector('button[data-action="update"]');
+        const deleteBtn = tr.querySelector('button[data-action="delete"]');
 
-        decBtn.onclick = () => adjustStock(item.sku, -1, inputEl, statusEl);
-        incBtn.onclick = () => adjustStock(item.sku, +1, inputEl, statusEl);
-        saveBtn.onclick = () => {
-          const val = parseInt(inputEl.value || '0', 10);
-          if (isNaN(val) || val < 0) return;
-          saveStock(item.sku, val, inputEl, statusEl);
+        updateBtn.onclick = () => {
+          const name = (nameInput.value || '').trim();
+          const stock = parseInt(stockInput.value || '0', 10);
+          const threshold = parseInt(thresholdInput.value || '0', 10);
+          if (!name || isNaN(stock) || stock < 0 || isNaN(threshold) || threshold < 0) return;
+          updateItem(item.sku, name, stock, threshold);
         };
+        deleteBtn.onclick = () => deleteItem(item.sku).then(loadItems);
       });
     }
 
-    async function loadItems() {
-      const items = await fetchItems();
-      renderItems(items);
+    async function updateItem(sku, name, stock, threshold) {
+      const res = await fetch(`${backend}/items/${sku}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, stock, threshold })
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        alert(body.detail || `Erreur ${res.status}`);
+        return;
+      }
+      await loadItems();
     }
 
-    document.addEventListener('DOMContentLoaded', loadItems);
+    async function deleteItem(sku) {
+      await fetch(`${backend}/items/${sku}`, { method: 'DELETE' });
+    }
+
+    async function loadItems() {
+      itemsCache = await fetchItems();
+      renderItems(itemsCache);
+    }
+
+    async function createItem() {
+      const nameEl = document.getElementById('add-name');
+      const skuEl = document.getElementById('add-sku');
+      const stockEl = document.getElementById('add-stock');
+      const thEl = document.getElementById('add-threshold');
+      const feedback = document.getElementById('add-feedback');
+      const name = (nameEl.value || '').trim();
+      const sku = (skuEl.value || '').trim();
+      const stock = parseInt(stockEl.value || '0', 10);
+      const threshold = parseInt(thEl.value || '0', 10);
+      if (!name || !sku || isNaN(stock) || stock < 0 || isNaN(threshold) || threshold < 0) {
+        feedback.textContent = 'Veuillez remplir correctement tous les champs.';
+        return;
+      }
+      feedback.textContent = '';
+      try {
+        const res = await fetch(`${backend}/items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sku, name, stock, threshold })
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.detail || `Erreur ${res.status}`);
+        }
+        nameEl.value = '';
+        skuEl.value = '';
+        stockEl.value = '';
+        thEl.value = '';
+        await loadItems();
+        feedback.textContent = 'Produit ajouté.';
+      } catch (e) {
+        feedback.textContent = `Échec: ${e.message}`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadItems();
+      const addBtn = document.getElementById('add-submit');
+      addBtn.addEventListener('click', createItem);
+      const refreshBtn = document.getElementById('refresh-items');
+      refreshBtn.addEventListener('click', loadItems);
+    });
   </script>
 </body>
 

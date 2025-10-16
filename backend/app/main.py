@@ -32,17 +32,6 @@ def init_db():
             );
             """
         )
-        cur.execute("SELECT COUNT(*) FROM items;")
-        count = cur.fetchone()[0]
-        if count == 0:
-            cur.executemany(
-                "INSERT INTO items (sku, name, stock, threshold) VALUES (%s, %s, %s, %s)",
-                [
-                    ("ALIM-PA-001", "Pâtes Spaghetti 500g", 36, 20),
-                    ("ALIM-SC-014", "Sauce Tomate 250g", 12, 15),
-                    ("ALIM-HU-077", "Huile d’Olive 1L", 0, 10),
-                ],
-            )
         conn.commit()
         cur.close()
         conn.close()
@@ -54,8 +43,18 @@ def init_db():
 def on_startup():
     init_db()
 
+# Store mémoire pour fonctionnement simple sans DB
+MEM_ITEMS: dict[str, dict] = {}
+
 
 class Item(BaseModel):
+    sku: str
+    name: str
+    stock: int
+    threshold: int
+
+
+class ItemCreate(BaseModel):
     sku: str
     name: str
     stock: int
@@ -73,6 +72,17 @@ class StockAdjust(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/")
+def root():
+    return {
+        "service": "fastapi-backend",
+        "message": "Backend OK",
+        "docs": "/docs",
+        "items": "/items",
+        "health": "/health"
+    }
 
 
 @app.get("/db-check")
@@ -98,15 +108,66 @@ def articles():
 
 @app.get("/items", response_model=List[Item])
 def list_items():
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    cur.execute("SELECT sku, name, stock, threshold FROM items ORDER BY name;")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return [
-        {"sku": r[0], "name": r[1], "stock": r[2], "threshold": r[3]} for r in rows
-    ]
+    # Fallback mémoire si DB indisponible
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("SELECT sku, name, stock, threshold FROM items ORDER BY name;")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [
+            {"sku": r[0], "name": r[1], "stock": r[2], "threshold": r[3]} for r in rows
+        ]
+    except Exception:
+        # utilise le store mémoire
+        return [
+            {"sku": s, "name": i["name"], "stock": i["stock"], "threshold": i["threshold"]}
+            for s, i in MEM_ITEMS.items()
+        ]
+
+
+@app.post("/items", response_model=Item, status_code=201)
+def create_item(payload: ItemCreate):
+    # validations simples
+    # (on vérifie avant de toucher à la DB)
+    if not payload.sku or not payload.sku.strip():
+        raise HTTPException(status_code=400, detail="SKU is required")
+    if not payload.name or not payload.name.strip():
+        raise HTTPException(status_code=400, detail="Name is required")
+    if payload.stock is None or payload.stock < 0:
+        raise HTTPException(status_code=400, detail="Stock must be >= 0")
+    if payload.threshold is None or payload.threshold < 0:
+        raise HTTPException(status_code=400, detail="Threshold must be >= 0")
+    # Tentative DB, sinon fallback mémoire
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+    except Exception:
+        # mémoire
+        if payload.sku in MEM_ITEMS:
+            raise HTTPException(status_code=409, detail="Item already exists")
+        MEM_ITEMS[payload.sku] = {
+            "name": payload.name,
+            "stock": payload.stock,
+            "threshold": payload.threshold,
+        }
+        return {"sku": payload.sku, "name": payload.name, "stock": payload.stock, "threshold": payload.threshold}
+    # validations simples
+    cur.execute("SELECT 1 FROM items WHERE sku=%s;", (payload.sku,))
+    exists = cur.fetchone()
+    if exists:
+        cur.close(); conn.close()
+        raise HTTPException(status_code=409, detail="Item already exists")
+    cur.execute(
+        "INSERT INTO items (sku, name, stock, threshold) VALUES (%s, %s, %s, %s)",
+        (payload.sku, payload.name, payload.stock, payload.threshold),
+    )
+    conn.commit()
+    cur.execute("SELECT sku, name, stock, threshold FROM items WHERE sku=%s;", (payload.sku,))
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    return {"sku": row[0], "name": row[1], "stock": row[2], "threshold": row[3]}
 
 
 @app.patch("/items/{sku}/stock", response_model=Item)
@@ -142,3 +203,81 @@ def adjust_stock(sku: str, payload: StockAdjust):
     row = cur.fetchone()
     cur.close(); conn.close()
     return {"sku": row[0], "name": row[1], "stock": row[2], "threshold": row[3]}
+
+
+class ItemUpdate(BaseModel):
+    name: str | None = None
+    stock: int | None = None
+    threshold: int | None = None
+
+
+@app.patch("/items/{sku}", response_model=Item)
+def update_item(sku: str, payload: ItemUpdate):
+    # Tentative DB
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("SELECT sku, name, stock, threshold FROM items WHERE sku=%s;", (sku,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            raise HTTPException(status_code=404, detail="Item not found")
+        name = payload.name if payload.name is not None else row[1]
+        stock = payload.stock if payload.stock is not None else row[2]
+        threshold = payload.threshold if payload.threshold is not None else row[3]
+        if name is None or not str(name).strip():
+            cur.close(); conn.close()
+            raise HTTPException(status_code=400, detail="Name is required")
+        if stock is not None and stock < 0:
+            cur.close(); conn.close()
+            raise HTTPException(status_code=400, detail="Stock must be >= 0")
+        if threshold is not None and threshold < 0:
+            cur.close(); conn.close()
+            raise HTTPException(status_code=400, detail="Threshold must be >= 0")
+        cur.execute(
+            "UPDATE items SET name=%s, stock=%s, threshold=%s WHERE sku=%s;",
+            (name, stock, threshold, sku),
+        )
+        conn.commit()
+        cur.execute("SELECT sku, name, stock, threshold FROM items WHERE sku=%s;", (sku,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        return {"sku": row[0], "name": row[1], "stock": row[2], "threshold": row[3]}
+    except Exception:
+        # Fallback mémoire
+        if sku not in MEM_ITEMS:
+            raise HTTPException(status_code=404, detail="Item not found")
+        current = MEM_ITEMS[sku]
+        name = payload.name if payload.name is not None else current["name"]
+        stock = payload.stock if payload.stock is not None else current["stock"]
+        threshold = payload.threshold if payload.threshold is not None else current["threshold"]
+        if name is None or not str(name).strip():
+            raise HTTPException(status_code=400, detail="Name is required")
+        if stock is not None and stock < 0:
+            raise HTTPException(status_code=400, detail="Stock must be >= 0")
+        if threshold is not None and threshold < 0:
+            raise HTTPException(status_code=400, detail="Threshold must be >= 0")
+        MEM_ITEMS[sku] = {"name": name, "stock": stock, "threshold": threshold}
+        return {"sku": sku, "name": name, "stock": stock, "threshold": threshold}
+
+
+@app.delete("/items/{sku}", status_code=204)
+def delete_item(sku: str):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM items WHERE sku=%s;", (sku,))
+        exists = cur.fetchone()
+        if not exists:
+            cur.close(); conn.close()
+            raise HTTPException(status_code=404, detail="Item not found")
+        cur.execute("DELETE FROM items WHERE sku=%s;", (sku,))
+        conn.commit()
+        cur.close(); conn.close()
+        return
+    except Exception:
+        # Fallback mémoire
+        if sku not in MEM_ITEMS:
+            raise HTTPException(status_code=404, detail="Item not found")
+        del MEM_ITEMS[sku]
+        return
