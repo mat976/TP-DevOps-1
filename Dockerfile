@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Copy backend application code
 COPY backend/app /app/app
 
+# Copier les fichiers statiques du frontend pour servir l'UI depuis le backend
+COPY frontend/public /app/static
+
 # Render supplies PORT; default to 8000 for local
 ENV PORT=8000
 EXPOSE 8000

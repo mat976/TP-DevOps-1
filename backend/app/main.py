@@ -1,13 +1,17 @@
 import os
 from typing import List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 import psycopg2
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://app:app@db:5432/appdb")
 
 app = FastAPI(title="Backend FastAPI", version="0.2.0")
+
+STATIC_DIR = os.getenv("STATIC_DIR", "/app/static")
+STATIC_INDEX = os.path.join(STATIC_DIR, "index.html")
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,6 +80,12 @@ def health():
 
 @app.get("/")
 def root():
+    # Sert l'UI si présente dans l'image; sinon JSON de diagnostic
+    try:
+        if os.path.exists(STATIC_INDEX):
+            return FileResponse(STATIC_INDEX)
+    except Exception:
+        pass
     return {
         "service": "fastapi-backend",
         "message": "Backend OK",
@@ -83,6 +93,14 @@ def root():
         "items": "/items",
         "health": "/health"
     }
+
+
+@app.get("/config.js")
+def config_js(request: Request):
+    base = str(request.base_url).rstrip("/")
+    backend_url = os.getenv("BACKEND_URL", base)
+    content = f"window.__BACKEND_URL__ = '{backend_url}';"
+    return PlainTextResponse(content, media_type="application/javascript")
 
 
 @app.get("/db-check")
